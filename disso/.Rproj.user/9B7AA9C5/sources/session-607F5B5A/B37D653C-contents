@@ -1,0 +1,21 @@
+# load dataset as 'Data'
+Data = read.csv("Invistico_Airline.csv", stringsAsFactors = FALSE)
+
+# basic observations
+head(Data)
+summary(Data)
+dim(Data)
+is.na(Data)
+
+# inspect column types
+for(i in 1:(ncol(Data))) {
+  if(is.numeric(Data[, i]) == TRUE){
+    cat(sprintf("column %s is numeric\n", i))
+  }
+  else if(is.factor(Data[, i]) == TRUE){
+    cat(sprintf("column %s is factor\n", i))
+  }
+  else{
+    cat(sprintf("column %s is char\n", i))
+  }
+}
