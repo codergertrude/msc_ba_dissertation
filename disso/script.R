@@ -74,10 +74,10 @@ hier_clust <- hclust(dist, method = "ward.D2")
 plot(hier_clust)
 
 # display 6 cluster solution on plot
-rect.hclust(hier_clust, k = 6, border = "red")
+rect.hclust(hier_clust, k = 10, border = "red")
 
 # create 6 cluster solution
-hcluster_groups <- cutree(hier_clust, k = 6)
+hcluster_groups <- cutree(hier_clust, k = 10)
 
 # table of member numbers
 table(hcluster_groups)
@@ -93,10 +93,29 @@ data_att_norm_p1t5 %>%
   print(width = Inf) # prints all variables (all columns)
 
 # flexclust profiles 
-hier_clust_flex <- as.kcca(hier_clust, data_att_norm, k = 6)
+hier_clust_flex <- as.kcca(hier_clust, data_att_norm, k = 10)
 
 table(hcluster_groups, clusters(hier_clust_flex))
 
 barchart(hier_clust_flex, main = "Segment Profiles")
 
+# remove hierarchical clustering assignment col
+data_att <- Data[, 8:21]
+data_att_norm <- as.data.frame(scale(data_att, center=TRUE, scale=TRUE))
+data_att_norm_p1t12 <- data_att_norm
+
+# set seed
+set.seed(123)
+
+# k means clustering
+kmeans_clust <- kmeans(data_att_norm_p1t12, 
+                       centers = 5, 
+                       iter.max = 1000,
+                       nstart = 100)
+
+table(kmeans_clust$cluster)
+
+# add k means clustering groups to normalised dataset
+data_att_norm_p1t13 <- data_att_norm %>% 
+  mutate(kcluster_groups = kmeans_clust$cluster)
 
