@@ -1,8 +1,12 @@
+# libraries
 library(ggplot2)
 library(tidyverse)
 library(flexclust)
 library(janitor)
 library(cowplot)
+library(e1071)
+library(caret)
+library(mclust)
 
 # load dataset as 'Data'
 Data = read.csv("Invistico_Airline.csv", stringsAsFactors = FALSE)
@@ -11,6 +15,13 @@ Data = read.csv("Invistico_Airline.csv", stringsAsFactors = FALSE)
 head(Data)
 summary(Data)
 dim(Data)
+
+# missing values per column check
+cbind(
+  lapply(
+    lapply(Data, is.na)
+    , sum)
+)
 
 # inspect column types
 for(i in 1:(ncol(Data))) {
@@ -36,23 +47,40 @@ for(i in 1:ncol(Data)){
   }
 }
 
-# basic plots of each feature
-plot_list = list()
+# replace missing values with mean of column IF they are numerical
 for(i in 1:ncol(Data)){
-  var = names(Data)[i]
   if(is.numeric(Data[, i]) == TRUE){
-    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
-    # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_histogram(bins = 10) + labs(title = var) + coord_flip()
-    print(plot_list[[i]])
-  }
-  else if(is.factor(Data[, i]) == TRUE){
-    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_bar() + labs(title = var) + coord_flip()
-    print(plot_list[[i]])
+    for(n in 1:nrow(Data)){
+      if(is.na(Data[n, i]) == TRUE){
+        cat(sprintf("row: %s column: %f changed from NA\n", n, i))
+        Data[n, i] <- mean(Data[, i], na.rm = TRUE)
+      }
+    }
   }
   else{
-    cat(sprintf("feature %s is not graphable\n", i))
+    cat(sprintf("%s is non-numeric\n", i))
   }
 }
+
+# # basic plots of each feature
+# plot_list = list()
+# for(i in 1:ncol(Data)){
+#   var = names(Data)[i]
+#   if(is.numeric(Data[, i]) == TRUE){
+#     plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
+#     # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_histogram(bins = 10) + labs(title = var) + coord_flip()
+#     print(plot_list[[i]])
+#   }
+#   else if(is.factor(Data[, i]) == TRUE){
+#     plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_bar() + labs(title = var) + coord_flip()
+#     print(plot_list[[i]])
+#   }
+#   else{
+#     cat(sprintf("feature %s is not graphable\n", i))
+#   }
+# }
+
+################################################################################
 
 # select first 10% of records, any bigger than ~20k will be taxing on hardware, only selects attitudinal variables
 data_att <- Data[1:12988, 8:21]
@@ -93,7 +121,9 @@ data_att_norm_p1t5 %>%
   print(width = Inf) # prints all variables (all columns)
 
 # flexclust profiles 
-hier_clust_flex <- as.kcca(hier_clust, data_att_norm, k = 10)
+hier_clust_flex <- as.kcca(hier_clust, 
+                           data_att_norm, 
+                           k = 10)
 
 table(hcluster_groups, clusters(hier_clust_flex))
 
@@ -104,18 +134,46 @@ data_att <- Data[, 8:21]
 data_att_norm <- as.data.frame(scale(data_att, center=TRUE, scale=TRUE))
 data_att_norm_p1t12 <- data_att_norm
 
+# scale and center data
+scaled_data = as.matrix(scale(data_att))
+
+# initial clustering
+kmm = kmeans(scaled_data, 3, nstart = 50, iter.max = 15)
+kmm
+
 # set seed
 set.seed(123)
 
-# k means clustering
-kmeans_clust <- kmeans(data_att_norm_p1t12, 
-                       centers = 5, 
-                       iter.max = 1000,
-                       nstart = 100)
+k.max <- 15
+wss <- sapply(1:k.max, 
+              function(k){kmeans(data_att_norm_p1t12, k, nstart=100,iter.max = 1000 )$tot.withinss})
+wss
 
-table(kmeans_clust$cluster)
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
 
-# add k means clustering groups to normalised dataset
-data_att_norm_p1t13 <- data_att_norm %>% 
-  mutate(kcluster_groups = kmeans_clust$cluster)
+# bayesian inference criterion
+d_clust <- Mclust(as.matrix(scaled_data), G=1:15, 
+                  modelNames = mclust.options("emModelNames"))
+d_clust$BIC
+plot(d_clust)
+
+
+# # k means clustering
+# kmeans_clust <- kmeans(data_att_norm_p1t12, 
+#                        centers = 4, 
+#                        iter.max = 1000,
+#                        nstart = 100)
+# 
+# table(kmeans_clust$cluster)
+
+# # add k means clustering groups to normalised dataset
+# data_att_norm_p1t13 <- data_att_norm %>% 
+#   mutate(kcluster_groups = kmeans_clust$cluster)
+
+
+
+################################################################################
 
