@@ -7,6 +7,8 @@ library(cowplot)
 library(e1071)
 library(caret)
 library(mclust)
+library(NbClust)
+library(C50)
 
 # load dataset as 'Data'
 Data = read.csv("Invistico_Airline.csv", stringsAsFactors = FALSE)
@@ -23,7 +25,7 @@ cbind(
     , sum)
 )
 
-# inspect column types
+# inspect column types - char columns exist
 for(i in 1:(ncol(Data))) {
   if(is.numeric(Data[, i]) == TRUE){
     cat(sprintf("column %s is numeric\n", i))
@@ -47,20 +49,23 @@ for(i in 1:ncol(Data)){
   }
 }
 
-# replace missing values with mean of column IF they are numerical
-for(i in 1:ncol(Data)){
-  if(is.numeric(Data[, i]) == TRUE){
-    for(n in 1:nrow(Data)){
-      if(is.na(Data[n, i]) == TRUE){
-        cat(sprintf("row: %s column: %f changed from NA\n", n, i))
-        Data[n, i] <- mean(Data[, i], na.rm = TRUE)
-      }
-    }
-  }
-  else{
-    cat(sprintf("%s is non-numeric\n", i))
-  }
-}
+# # replace missing values with mean of column IF they are numerical
+# for(i in 1:ncol(Data)){
+#   if(is.numeric(Data[, i]) == TRUE){
+#     for(n in 1:nrow(Data)){
+#       if(is.na(Data[n, i]) == TRUE){
+#         cat(sprintf("row: %s column: %f changed from NA\n", n, i))
+#         Data[n, i] <- mean(Data[, i], na.rm = TRUE)
+#       }
+#     }
+#   }
+#   else{
+#     cat(sprintf("%s is non-numeric\n", i))
+#   }
+# }
+
+# remove observations with missing values (small number)
+Data <- na.omit(Data)
 
 # # basic plots of each feature
 # plot_list = list()
@@ -129,7 +134,7 @@ table(hcluster_groups, clusters(hier_clust_flex))
 
 barchart(hier_clust_flex, main = "Segment Profiles")
 
-# remove hierarchical clustering assignment col
+# redefine data_att
 data_att <- Data[, 8:21]
 data_att_norm <- as.data.frame(scale(data_att, center=TRUE, scale=TRUE))
 data_att_norm_p1t12 <- data_att_norm
@@ -146,7 +151,7 @@ set.seed(123)
 
 k.max <- 15
 wss <- sapply(1:k.max, 
-              function(k){kmeans(data_att_norm_p1t12, k, nstart=100,iter.max = 1000 )$tot.withinss})
+              function(k){kmeans(data_att_norm_p1t12, k, nstart=50,iter.max = 15)$tot.withinss})
 wss
 
 plot(1:k.max, wss,
@@ -160,6 +165,15 @@ d_clust <- Mclust(as.matrix(scaled_data), G=1:15,
 d_clust$BIC
 plot(d_clust)
 
+# clustering
+kmm = kmeans(data_att, 4, nstart = 50, iter.max = 15)
+kmm
+
+# # doesn't work due to euclidean distance (too comp expensive)
+# nb <- NbClust(scaled_data, diss=NULL, distance = "euclidean", 
+#               min.nc=2, max.nc=5, method = "kmeans", 
+#               index = "all", alphaBeale = 0.1)
+# hist(nb$Best.nc[1,], breaks = max(na.omit(nb$Best.nc[1,])))
 
 # # k means clustering
 # kmeans_clust <- kmeans(data_att_norm_p1t12, 
@@ -173,7 +187,26 @@ plot(d_clust)
 # data_att_norm_p1t13 <- data_att_norm %>% 
 #   mutate(kcluster_groups = kmeans_clust$cluster)
 
-
-
 ################################################################################
 
+# partition percentage for loop
+training_data_percentages <- seq(from = 0.1, to = 0.9, length.out = 9)
+
+# C5.0 algorithm (decision tree)
+cat("C5 implementation")
+for(t in training_data_percentages){
+  print("================================================================================================================")
+  cat(sprintf("Current training partition: %s\n", t))
+
+  indx_partition = createDataPartition(Data[, ncol(Data)], p = t, list = FALSE)
+  training_data = Data[indx_partition,]
+  testing_data = Data[-indx_partition,]
+
+  set.seed(42)
+  TrainedClassifier = C5.0(x = training_data[, 2:ncol(testing_data)], y = training_data[, 1])
+  Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)])
+
+  cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
+  print(cm)
+  print("END OF RUN")
+}
