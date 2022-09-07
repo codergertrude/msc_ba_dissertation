@@ -9,6 +9,9 @@ library(caret)
 library(mclust)
 library(NbClust)
 library(C50)
+library(Boruta)
+library(corrplot)
+library(ggcorrplot)
 
 # load dataset as 'Data'
 Data = read.csv("Invistico_Airline.csv", stringsAsFactors = FALSE)
@@ -85,54 +88,61 @@ Data <- na.omit(Data)
 #   }
 # }
 
+# print correlation matrix
+model.matrix(~0+., Data) %>%
+  cor() %>%
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+
 ################################################################################
 
-# select first 10% of records, any bigger than ~20k will be taxing on hardware, only selects attitudinal variables
-data_att <- Data[1:12988, 8:21]
+# # select first 10% of records, any bigger than ~20k will be taxing on hardware, only selects attitudinal variables
+# data_att <- Data[1:12988, 8:21]
+# 
+# # normalise values
+# data_att_norm <- as.data.frame(scale(data_att, center=TRUE, scale=TRUE))
+# 
+# # basic summary
+# summary(data_att_norm)
+# 
+# # set seed
+# set.seed(123)
+# 
+# # calculate distances for clustering
+# dist <- dist(data_att_norm, method = 'euclidean')
+# 
+# # initiate clustering
+# hier_clust <- hclust(dist, method = "ward.D2") 
+# plot(hier_clust)
+# 
+# # display 6 cluster solution on plot
+# rect.hclust(hier_clust, k = 10, border = "red")
+# 
+# # create 6 cluster solution
+# hcluster_groups <- cutree(hier_clust, k = 10)
+# 
+# # table of member numbers
+# table(hcluster_groups)
+# 
+# # add cluster assignment to dataframe
+# data_att_norm_p1t5 <- data_att_norm %>% 
+#   mutate(hcluster_groups = hcluster_groups)
+# 
+# # statistics for each cluster
+# data_att_norm_p1t5 %>%
+#   group_by(hcluster_groups) %>% # group by cluster
+#   summarise_all(~ mean(.x)) %>% # calculate the mean per group 
+#   print(width = Inf) # prints all variables (all columns)
+# 
+# # flexclust profiles 
+# hier_clust_flex <- as.kcca(hier_clust, 
+#                            data_att_norm, 
+#                            k = 10)
+# 
+# table(hcluster_groups, clusters(hier_clust_flex))
+# 
+# barchart(hier_clust_flex, main = "Segment Profiles")
 
-# normalise values
-data_att_norm <- as.data.frame(scale(data_att, center=TRUE, scale=TRUE))
-
-# basic summary
-summary(data_att_norm)
-
-# set seed
-set.seed(123)
-
-# calculate distances for clustering
-dist <- dist(data_att_norm, method = 'euclidean')
-
-# initiate clustering
-hier_clust <- hclust(dist, method = "ward.D2") 
-plot(hier_clust)
-
-# display 6 cluster solution on plot
-rect.hclust(hier_clust, k = 10, border = "red")
-
-# create 6 cluster solution
-hcluster_groups <- cutree(hier_clust, k = 10)
-
-# table of member numbers
-table(hcluster_groups)
-
-# add cluster assignment to dataframe
-data_att_norm_p1t5 <- data_att_norm %>% 
-  mutate(hcluster_groups = hcluster_groups)
-
-# statistics for each cluster
-data_att_norm_p1t5 %>%
-  group_by(hcluster_groups) %>% # group by cluster
-  summarise_all(~ mean(.x)) %>% # calculate the mean per group 
-  print(width = Inf) # prints all variables (all columns)
-
-# flexclust profiles 
-hier_clust_flex <- as.kcca(hier_clust, 
-                           data_att_norm, 
-                           k = 10)
-
-table(hcluster_groups, clusters(hier_clust_flex))
-
-barchart(hier_clust_flex, main = "Segment Profiles")
+#####
 
 # redefine data_att
 data_att <- Data[, 8:21]
@@ -189,15 +199,32 @@ kmm
 
 ################################################################################
 
+# boruta test
+boruta_output <- Boruta(Data$satisfaction ~ ., data=Data[, 2:ncol(Data)], doTrace=0)
+names(boruta_output)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+
+imps <- attStats(roughFixMod)
+imps2 = imps[imps$decision != 'Rejected', c('meanImp', 'decision')]
+head(imps2[order(-imps2$meanImp), ])  # descending sort
+plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance")  
+
+# rpart test
+set.seed(123)
+rPartMod <- train(satisfaction ~ ., data = Data, method="rpart")
+rpartImp <- varImp(rPartMod)
+print(rpartImp)
+
 # partition percentage for loop
 training_data_percentages <- seq(from = 0.1, to = 0.9, length.out = 9)
 
-# C5.0 algorithm (decision tree)
-cat("C5 implementation")
+# decision tree classification
+cat("Decision Tree implementation")
 for(t in training_data_percentages){
   print("================================================================================================================")
-  cat(sprintf("Current training partition: %s\n", t))
-
+  cat(sprintf("Current train-test split: %s-%1.0f\n", t*100, (1-t)*100))
+  
   indx_partition = createDataPartition(Data[, ncol(Data)], p = t, list = FALSE)
   training_data = Data[indx_partition,]
   testing_data = Data[-indx_partition,]
@@ -210,3 +237,23 @@ for(t in training_data_percentages){
   print(cm)
   print("END OF RUN")
 }
+
+# nb classification
+cat("Naive Bayes implementation")
+for(t in training_data_percentages){
+  print("================================================================================================================")
+  cat(sprintf("Current train-test split: %s-%1.0f\n", t*100, (1-t)*100))
+
+  indx_partition = createDataPartition(Data[, ncol(Data)], p = t, list = FALSE)
+  training_data = Data[indx_partition,]
+  testing_data = Data[-indx_partition,]
+
+  set.seed(42)
+  TrainedClassifier = naiveBayes(satisfaction ~ ., data = training_data, laplace=0)
+  Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[,2:ncol(testing_data)])
+
+  cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
+  print(cm)
+  print("END OF RUN")
+}
+
