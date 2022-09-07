@@ -70,28 +70,34 @@ for(i in 1:ncol(Data)){
 # remove observations with missing values (small number)
 Data <- na.omit(Data)
 
-# # basic plots of each feature
-# plot_list = list()
-# for(i in 1:ncol(Data)){
-#   var = names(Data)[i]
-#   if(is.numeric(Data[, i]) == TRUE){
-#     plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
-#     # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_histogram(bins = 10) + labs(title = var) + coord_flip()
-#     print(plot_list[[i]])
-#   }
-#   else if(is.factor(Data[, i]) == TRUE){
-#     plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_bar() + labs(title = var) + coord_flip()
-#     print(plot_list[[i]])
-#   }
-#   else{
-#     cat(sprintf("feature %s is not graphable\n", i))
-#   }
-# }
+# basic plots of each feature
+plot_list = list()
+for(i in 1:ncol(Data)){
+  var = names(Data)[i]
+  if(is.numeric(Data[, i]) == TRUE){
+    # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
+    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_histogram(bins = 5) + labs(title = var) + coord_flip()
+    print(plot_list[[i]])
+  }
+  else if(is.factor(Data[, i]) == TRUE){
+    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_bar() + labs(title = var) + coord_flip()
+    print(plot_list[[i]])
+  }
+  else{
+    cat(sprintf("feature %s is not graphable\n", i))
+  }
+}
 
 # print correlation matrix
 model.matrix(~0+., Data) %>%
   cor() %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+
+# means by age (group?)
+aggregate(Data, by=list(cluster=kmm$cluster), mean)
+
+# means by satisfaction
+aggregate(Data, by=list(cluster=kmm$cluster), mean)
 
 ################################################################################
 
@@ -176,8 +182,14 @@ d_clust$BIC
 plot(d_clust)
 
 # clustering
-kmm = kmeans(data_att, 4, nstart = 50, iter.max = 15)
+kmm = kmeans(data_att, 4, nstart = 50, iter.max = 30)
 kmm
+
+# means per cluster
+aggregate(Data, by=list(cluster=kmm$cluster), mean)
+
+# adding cluster assignments to dataset
+Data_clustered <- cbind(Data, cluster = kmm$cluster)
 
 # # doesn't work due to euclidean distance (too comp expensive)
 # nb <- NbClust(scaled_data, diss=NULL, distance = "euclidean", 
@@ -257,3 +269,39 @@ for(t in training_data_percentages){
   print("END OF RUN")
 }
 
+##############################################################################
+points <- data.frame(points)
+
+for(i in 1:nrow(Data)){
+  if(Data[i, 1] == 'satisfied'){
+    for(j in 8:21){
+      if(Data[i, (j-7)] == 4){
+        points[i, (j-7)] = 1 + points[i, (j-7)]
+      }
+      if(Data[i, (j-7)] == 5){
+        points[i, (j-7)] = 2 + points[i, (j-7)]
+      }
+      if(Data[i, (j-7)] == 2){
+        points[i, (j-7)] = 0.5 + points[i, (j-7)]
+      }
+      if(Data[i, (j-7)] == 1){
+        points[i, (j-7)] = 1 + points[i, (j-7)]
+      }
+    }
+  } else {
+    for(j in 8:21){
+      if(Data[i, (j-7)] == 4){
+        points[i, (j-7)] = 0.5 + points[i, (j-7)]
+      }
+      if(Data[i, (j-7)] == 5){
+        points[i, (j-7)] = 1 + points[i, (j-7)]
+      }
+      if(Data[i, (j-7)] == 2){
+        points[i, (j-7)] = 1 + points[i, (j-7)]
+      }
+      if(Data[i, (j-7)] == 1){
+        points[i, (j-7)] = 2 + points[i, (j-7)]
+      }
+    }
+  }
+}
