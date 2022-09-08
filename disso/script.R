@@ -12,6 +12,8 @@ library(C50)
 library(Boruta)
 library(corrplot)
 library(ggcorrplot)
+library(ROCR)
+library(pROC)
 
 # load dataset as 'Data'
 Data = read.csv("Invistico_Airline.csv", stringsAsFactors = FALSE)
@@ -240,14 +242,18 @@ for(t in training_data_percentages){
   indx_partition = createDataPartition(Data[, ncol(Data)], p = t, list = FALSE)
   training_data = Data[indx_partition,]
   testing_data = Data[-indx_partition,]
-
+  
   set.seed(42)
   TrainedClassifier = C5.0(x = training_data[, 2:ncol(testing_data)], y = training_data[, 1])
-  Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)])
-
+  Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)], type = "prob")[, 2]
+  
+  roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
+  plot(roc_score, main = paste("ROC Curve for Decision Tree, Split Ratio", t*100, "-", (1-t)*100))
+  
+  Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
+  
   cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
   print(cm)
-  print("END OF RUN")
 }
 
 # nb classification
@@ -262,11 +268,15 @@ for(t in training_data_percentages){
 
   set.seed(42)
   TrainedClassifier = naiveBayes(satisfaction ~ ., data = training_data, laplace=0)
-  Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[,2:ncol(testing_data)])
+  Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)], type = "raw")[, 2]
+  
+  roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
+  plot(roc_score, main = paste("ROC Curve for Decision Tree, Split Ratio", t*100, "-", (1-t)*100))
+  
+  Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
 
   cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
   print(cm)
-  print("END OF RUN")
 }
 
 ##############################################################################
