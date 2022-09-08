@@ -23,12 +23,15 @@ head(Data)
 summary(Data)
 dim(Data)
 
-# missing values per column check
+# missing values per column check (~300 rows are missing value in arrivalDelay)
 cbind(
   lapply(
     lapply(Data, is.na)
     , sum)
 )
+
+# remove observations with missing values (small number, appropriate)
+Data <- na.omit(Data)
 
 # inspect column types - char columns exist
 for(i in 1:(ncol(Data))) {
@@ -54,24 +57,6 @@ for(i in 1:ncol(Data)){
   }
 }
 
-# # replace missing values with mean of column IF they are numerical
-# for(i in 1:ncol(Data)){
-#   if(is.numeric(Data[, i]) == TRUE){
-#     for(n in 1:nrow(Data)){
-#       if(is.na(Data[n, i]) == TRUE){
-#         cat(sprintf("row: %s column: %f changed from NA\n", n, i))
-#         Data[n, i] <- mean(Data[, i], na.rm = TRUE)
-#       }
-#     }
-#   }
-#   else{
-#     cat(sprintf("%s is non-numeric\n", i))
-#   }
-# }
-
-# remove observations with missing values (small number)
-Data <- na.omit(Data)
-
 # basic plots of each feature
 plot_list = list()
 for(i in 1:ncol(Data)){
@@ -89,11 +74,6 @@ for(i in 1:ncol(Data)){
     cat(sprintf("feature %s is not graphable\n", i))
   }
 }
-
-# print correlation matrix
-model.matrix(~0+., Data) %>%
-  cor() %>%
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 # count plots by satisfaction
 # plot of age (count)
@@ -219,6 +199,11 @@ for(i in 2:ncol(dissat_Data)){
   }
 }
 
+# print correlation matrix
+model.matrix(~0+., Data) %>%
+  cor() %>%
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+
 ################################################################################
 
 # # select first 10% of records, any bigger than ~20k will be taxing on hardware, only selects attitudinal variables
@@ -313,7 +298,7 @@ Data_clustered <- cbind(Data, cluster = kmm$cluster)
 
 ################################################################################
 
-# boruta test
+# boruta working
 boruta_output <- Boruta(Data$satisfaction ~ ., data=Data[, 2:ncol(Data)], doTrace=0)
 names(boruta_output)
 boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
@@ -324,7 +309,7 @@ imps2 = imps[imps$decision != 'Rejected', c('meanImp', 'decision')]
 head(imps2[order(-imps2$meanImp), ])  # descending sort
 plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance")  
 
-# rpart test
+# rpart working
 set.seed(123)
 rPartMod <- train(satisfaction ~ ., data = Data, method="rpart")
 rpartImp <- varImp(rPartMod)
@@ -333,25 +318,28 @@ print(rpartImp)
 # partition percentage for loop
 training_data_percentages <- seq(from = 0.1, to = 0.9, length.out = 9)
 
-# decision tree classification
+# decision tree classification (looping through 9 possible splits)
 cat("Decision Tree implementation")
 for(t in training_data_percentages){
   print("================================================================================================================")
   cat(sprintf("Current train-test split: %s-%1.0f\n", t*100, (1-t)*100))
   
+  # partition setup
   indx_partition = createDataPartition(Data[, ncol(Data)], p = t, list = FALSE)
   training_data = Data[indx_partition,]
   testing_data = Data[-indx_partition,]
   
+  # set seed for reproducability, train and receive predictions
   set.seed(42)
   TrainedClassifier = C5.0(x = training_data[, 2:ncol(testing_data)], y = training_data[, 1])
   Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)], type = "prob")[, 2]
   
+  # calculate AUC from decision confidence, draw ROC curve
   roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
   plot(roc_score, main = paste("ROC Curve for Decision Tree, Split Ratio", t*100, "-", (1-t)*100))
   
+  # convert decision confidence to factor, produce confusion matrix
   Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
-  
   cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
   print(cm)
 }
