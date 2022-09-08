@@ -101,6 +101,36 @@ aggregate(Data, by=list(cluster=kmm$cluster), mean)
 # means by satisfaction
 aggregate(Data, by=list(cluster=kmm$cluster), mean)
 
+# plot of age (count)
+age_count <- ggplot(Data, aes(x = Data[, 4])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal()
+age_count
+
+# plot of gender (count)(by satisfaction)
+gender_count <- ggplot(Data, aes(x = Data[, 2], fill = Data[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal()
+gender_count
+
+# plot of customer loyalty (count)(by satisfaction)
+loyalty_count <- ggplot(Data, aes(x = Data[, 3], fill = Data[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal()
+loyalty_count
+
+# plot of customer travel type(count)(by satisfaction)
+type_count <- ggplot(Data, aes(x = Data[, 5], fill = Data[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal()
+type_count
+
+# plot of customer seat class (count)(by satisfaction)
+class_count <- ggplot(Data, aes(x = Data[, 6], fill = Data[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal()
+class_count
+
 ################################################################################
 
 # # select first 10% of records, any bigger than ~20k will be taxing on hardware, only selects attitudinal variables
@@ -192,24 +222,6 @@ aggregate(Data, by=list(cluster=kmm$cluster), mean)
 
 # adding cluster assignments to dataset
 Data_clustered <- cbind(Data, cluster = kmm$cluster)
-
-# # doesn't work due to euclidean distance (too comp expensive)
-# nb <- NbClust(scaled_data, diss=NULL, distance = "euclidean", 
-#               min.nc=2, max.nc=5, method = "kmeans", 
-#               index = "all", alphaBeale = 0.1)
-# hist(nb$Best.nc[1,], breaks = max(na.omit(nb$Best.nc[1,])))
-
-# # k means clustering
-# kmeans_clust <- kmeans(data_att_norm_p1t12, 
-#                        centers = 4, 
-#                        iter.max = 1000,
-#                        nstart = 100)
-# 
-# table(kmeans_clust$cluster)
-
-# # add k means clustering groups to normalised dataset
-# data_att_norm_p1t13 <- data_att_norm %>% 
-#   mutate(kcluster_groups = kmeans_clust$cluster)
 
 ################################################################################
 
