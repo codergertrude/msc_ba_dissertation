@@ -95,17 +95,46 @@ model.matrix(~0+., Data) %>%
   cor() %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
-# means by age (group?)
-aggregate(Data, by=list(cluster=kmm$cluster), mean)
-
-# means by satisfaction
-aggregate(Data, by=list(cluster=kmm$cluster), mean)
-
+# count plots by satisfaction
 # plot of age (count)
 age_count <- ggplot(Data, aes(x = Data[, 4])) +
   geom_bar(width=0.5, position = position_dodge()) + 
   theme_minimal()
 age_count
+
+# plot of age GROUPS (count)(by satisfaction)
+# grouping ages by tens 
+ageplotdata <- Data
+for (i in 1:nrow(ageplotdata)){
+  if (ageplotdata[i, 4] >= 0 && ageplotdata[i, 4] <= 10){
+    ageplotdata[i, 4] <- "0-10"
+  }
+  if (ageplotdata[i, 4] >= 11 && ageplotdata[i, 4] <= 20){
+    ageplotdata[i, 4] <- "11-20"
+  }
+  if (ageplotdata[i, 4] >= 21 && ageplotdata[i, 4] <= 30){
+    ageplotdata[i, 4] <- "21-30"
+  }
+  if (ageplotdata[i, 4] >= 31 && ageplotdata[i, 4] <= 40){
+    ageplotdata[i, 4] <- "31-40"
+  }
+  if (ageplotdata[i, 4] >= 41 && ageplotdata[i, 4] <= 50){
+    ageplotdata[i, 4] <- "41-50"
+  }
+  if (ageplotdata[i, 4] >= 51 && ageplotdata[i, 4] <= 60){
+    ageplotdata[i, 4] <- "51-60"
+  }
+  if (ageplotdata[i, 4] >= 61){
+    ageplotdata[i, 4] <- "61+"
+  }
+}
+agegroup_count[, 4] <- as.factor(agegroup_count[, 4])
+
+# plot of age groups (count)(by satisfaction)
+agegroup_count <- ggplot(ageplotdata, aes(x = ageplotdata[, 4], fill = ageplotdata[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal()
+agegroup_count
 
 # plot of gender (count)(by satisfaction)
 gender_count <- ggplot(Data, aes(x = Data[, 2], fill = Data[, 1])) +
@@ -130,6 +159,65 @@ class_count <- ggplot(Data, aes(x = Data[, 6], fill = Data[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
   theme_minimal()
 class_count
+
+# separate satisfaction, 
+sat_Data <- Data %>% filter(satisfaction == 'satisfied')
+summary(sat_Data)
+
+# SATISFIED plots
+plot_list = list()
+for(i in 2:ncol(sat_Data)){
+  var = names(sat_Data)[i]
+  if(is.numeric(sat_Data[, i]) == TRUE){
+    # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
+    plot_list[[i]] = ggplot(sat_Data, aes(, sat_Data[, i])) + 
+      geom_histogram(bins = 5) + 
+      labs(title = var) + 
+      coord_flip() + 
+      theme_minimal()
+    print(plot_list[[i]])
+  }
+  else if(is.factor(sat_Data[, i]) == TRUE){
+    plot_list[[i]] = ggplot(sat_Data, aes(, sat_Data[, i])) + 
+      geom_bar(width = 0.5) + 
+      labs(title = var) + 
+      coord_flip() + 
+      theme_minimal()
+    print(plot_list[[i]])
+  }
+  else{
+    cat(sprintf("feature %s is not graphable\n", i))
+  }
+}
+
+dissat_Data <- Data %>% filter(satisfaction == 'dissatisfied')
+summary(dissat_Data)
+
+# DISSATISFIED plots
+plot_list = list()
+for(i in 2:ncol(dissat_Data)){
+  var = names(dissat_Data)[i]
+  if(is.numeric(dissat_Data[, i]) == TRUE){
+    # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
+    plot_list[[i]] = ggplot(dissat_Data, aes(, dissat_Data[, i])) + 
+      geom_histogram(bins = 5) + 
+      labs(title = var) + 
+      coord_flip() + 
+      theme_minimal()
+    print(plot_list[[i]])
+  }
+  else if(is.factor(dissat_Data[, i]) == TRUE){
+    plot_list[[i]] = ggplot(dissat_Data, aes(, sat_Data[, i])) + 
+      geom_bar(width = 0.5) + 
+      labs(title = var) + 
+      coord_flip() + 
+      theme_minimal()
+    print(plot_list[[i]])
+  }
+  else{
+    cat(sprintf("feature %s is not graphable\n", i))
+  }
+}
 
 ################################################################################
 
