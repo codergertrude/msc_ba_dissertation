@@ -8,6 +8,7 @@ library(e1071)
 library(caret)
 library(mclust)
 library(NbClust)
+library(klaR)
 library(C50)
 library(Boruta)
 library(corrplot)
@@ -63,11 +64,11 @@ for(i in 1:ncol(Data)){
   var = names(Data)[i]
   if(is.numeric(Data[, i]) == TRUE){
     # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
-    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_histogram(bins = 5) + labs(title = var) + coord_flip()
+    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_histogram(bins = 5) + labs(title = var) + coord_flip() + theme_minimal()
     print(plot_list[[i]])
   }
   else if(is.factor(Data[, i]) == TRUE){
-    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_bar() + labs(title = var) + coord_flip()
+    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_bar() + labs(title = var) + coord_flip() + theme_minimal()
     print(plot_list[[i]])
   }
   else{
@@ -108,7 +109,7 @@ for (i in 1:nrow(ageplotdata)){
     ageplotdata[i, 4] <- "61+"
   }
 }
-agegroup_count[, 4] <- as.factor(agegroup_count[, 4])
+ageplotdata[, 4] <- as.factor(ageplotdata[, 4])
 
 # plot of age groups (count)(by satisfaction)
 agegroup_count <- ggplot(ageplotdata, aes(x = ageplotdata[, 4], fill = ageplotdata[, 1])) +
@@ -116,6 +117,7 @@ agegroup_count <- ggplot(ageplotdata, aes(x = ageplotdata[, 4], fill = ageplotda
   theme_minimal()
 agegroup_count
 
+# PLOTS OF CATEGORICAL/BINARY FACTOR VARIABLES
 # plot of gender (count)(by satisfaction)
 gender_count <- ggplot(Data, aes(x = Data[, 2], fill = Data[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -187,7 +189,7 @@ for(i in 2:ncol(dissat_Data)){
     print(plot_list[[i]])
   }
   else if(is.factor(dissat_Data[, i]) == TRUE){
-    plot_list[[i]] = ggplot(dissat_Data, aes(, sat_Data[, i])) + 
+    plot_list[[i]] = ggplot(dissat_Data, aes(, dissat_Data[, i])) + 
       geom_bar(width = 0.5) + 
       labs(title = var) + 
       coord_flip() + 
@@ -199,80 +201,92 @@ for(i in 2:ncol(dissat_Data)){
   }
 }
 
+# initialize dataset with ALL factor variables (for k mode clusters)
+factorData <- ageplotdata[1:21]
+
+# convert flight distance to factor
+for (i in 1:nrow(factorData)){
+  if (factorData[i, 7] >= 0 && factorData[i, 7] <= 1000){
+    factorData[i, 7] <- "0-1000"
+  }
+  if (factorData[i, 7] >= 1001 && factorData[i, 7] <= 2000){
+    factorData[i, 7] <- "1001-2000"
+  }
+  if (factorData[i, 7] >= 2001 && factorData[i, 7] <= 3000){
+    factorData[i, 7] <- "2001-3000"
+  }
+  if (factorData[i, 7] >= 3001 && factorData[i, 7] <= 4000){
+    factorData[i, 7] <- "3001-4000"
+  }
+  if (factorData[i, 7] >= 4001){
+    factorData[i, 7] <- "4001+"
+  }
+}
+factorData[, 7] <- as.factor(factorData[, 7])
+
+# convert Likert scales to factor 
+for(i in 1:ncol(factorData)){
+  if(is.numeric(factorData[, i]) == TRUE){
+    factorData[, i] <- as.factor(factorData[, i])
+    if(is.factor(factorData[, i]) == TRUE){
+      cat(sprintf("feature %s has been converted into factor\n", i))
+      cat(sprintf("with levels: %s\n", levels(Data[, i])))
+    }
+  }
+}
+
+# plot of flight distance (count)(by satisfaction)
+flightdist_count <- ggplot(factorData, aes(x = factorData[, 7], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal()
+flightdist_count
+
 # print correlation matrix
 model.matrix(~0+., Data) %>%
   cor() %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
 
 ################################################################################
-
-# # select first 10% of records, any bigger than ~20k will be taxing on hardware, only selects attitudinal variables
-# data_att <- Data[1:12988, 8:21]
 # 
-# # normalise values
-# data_att_norm <- as.data.frame(scale(data_att, center=TRUE, scale=TRUE))
-# 
-# # basic summary
-# summary(data_att_norm)
+# kmodeclust <- kmodes(factorData[2:ncol(factorData)], 5, iter.max = 10, weighted = FALSE)
+# kmodeclust
 # 
 # # set seed
 # set.seed(123)
 # 
-# # calculate distances for clustering
-# dist <- dist(data_att_norm, method = 'euclidean')
+# # elbow method
+# k.max <- 15
+# wss <- sapply(1:k.max, 
+#               function(k){kmodes(factorData, k, iter.max = 15)$withindiff})
+# wss
 # 
-# # initiate clustering
-# hier_clust <- hclust(dist, method = "ward.D2") 
-# plot(hier_clust)
-# 
-# # display 6 cluster solution on plot
-# rect.hclust(hier_clust, k = 10, border = "red")
-# 
-# # create 6 cluster solution
-# hcluster_groups <- cutree(hier_clust, k = 10)
-# 
-# # table of member numbers
-# table(hcluster_groups)
-# 
-# # add cluster assignment to dataframe
-# data_att_norm_p1t5 <- data_att_norm %>% 
-#   mutate(hcluster_groups = hcluster_groups)
-# 
-# # statistics for each cluster
-# data_att_norm_p1t5 %>%
-#   group_by(hcluster_groups) %>% # group by cluster
-#   summarise_all(~ mean(.x)) %>% # calculate the mean per group 
-#   print(width = Inf) # prints all variables (all columns)
-# 
-# # flexclust profiles 
-# hier_clust_flex <- as.kcca(hier_clust, 
-#                            data_att_norm, 
-#                            k = 10)
-# 
-# table(hcluster_groups, clusters(hier_clust_flex))
-# 
-# barchart(hier_clust_flex, main = "Segment Profiles")
+# plot(1:k.max, wss,
+#      type="b", pch = 19, frame = FALSE, 
+#      xlab="Number of clusters K",
+#      ylab="Total within-clusters sum of squares")
 
 #####
 
-# redefine data_att
-data_att <- Data[, 8:21]
-data_att_norm <- as.data.frame(scale(data_att, center=TRUE, scale=TRUE))
-data_att_norm_p1t12 <- data_att_norm
+# redefine data_att (must be as such, can only be used on cont variables)
+clustData <- Data[, 2:23]
+clustData_OH <- model.matrix(~0+., data=clustData)[,2:24]
+clustData_OH_scaled <- as.data.frame(scale(clustData_OH, center=TRUE, scale=TRUE))
+scaled_data <- clustData_OH_scaled
 
-# scale and center data
-scaled_data = as.matrix(scale(data_att))
+# # scale and center data
+# scaled_data = as.matrix(scale(data_att))
 
 # initial clustering
-kmm = kmeans(scaled_data, 3, nstart = 50, iter.max = 15)
+kmm = kmeans(scaled_data, 3, nstart = 50, iter.max = 50)
 kmm
 
 # set seed
 set.seed(123)
 
+# elbow method
 k.max <- 15
 wss <- sapply(1:k.max, 
-              function(k){kmeans(data_att_norm_p1t12, k, nstart=50,iter.max = 15)$tot.withinss})
+              function(k){kmeans(scaled_data, k, nstart=50,iter.max = 50)$tot.withinss})
 wss
 
 plot(1:k.max, wss,
@@ -287,11 +301,11 @@ d_clust$BIC
 plot(d_clust)
 
 # clustering
-kmm = kmeans(data_att, 4, nstart = 50, iter.max = 30)
+kmm = kmeans(scaled_data, 5, nstart = 50, iter.max = 50)
 kmm
 
 # means per cluster
-aggregate(Data, by=list(cluster=kmm$cluster), mean)
+aggregate(clustData_OH, by=list(cluster=kmm$cluster), mean)
 
 # adding cluster assignments to dataset
 Data_clustered <- cbind(Data, cluster = kmm$cluster)
@@ -359,10 +373,34 @@ for(t in training_data_percentages){
   Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)], type = "raw")[, 2]
   
   roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
-  plot(roc_score, main = paste("ROC Curve for Decision Tree, Split Ratio", t*100, "-", (1-t)*100))
+  plot(roc_score, main = paste("ROC Curve for Naive Bayes, Split Ratio", t*100, "-", (1-t)*100))
   
   Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
 
+  cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
+  print(cm)
+}
+
+# Logistic regression algorithm
+cat("Logistic regression implementation")
+for(t in training_data_percentages){
+  print("================================================================================================================")
+  cat(sprintf("Current training partition: %s\n", t))
+
+  indx_partition = createDataPartition(Data[, ncol(Data)], p = t, list = FALSE)
+  training_data = Data[indx_partition,]
+  testing_data = Data[-indx_partition,]
+
+  set.seed(42)
+  TrainedClassifier = glm(satisfaction ~ .,family=binomial(link='logit'), data = training_data)
+  Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)], type = "response")
+
+  roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
+  plot(roc_score, main = paste("ROC Curve for Logistic Regression, Split Ratio", t*100, "-", (1-t)*100))
+  
+  # Set decision threshold
+  Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
+  
   cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
   print(cm)
 }
