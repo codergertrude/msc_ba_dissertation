@@ -64,7 +64,11 @@ for(i in 1:ncol(Data)){
   var = names(Data)[i]
   if(is.numeric(Data[, i]) == TRUE){
     # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
-    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_histogram(bins = 5) + labs(title = var) + coord_flip() + theme_minimal()
+    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + 
+      geom_histogram(bins = 5) + 
+      labs(title = var) + 
+      coord_flip() + 
+      theme_minimal()
     print(plot_list[[i]])
   }
   else if(is.factor(Data[, i]) == TRUE){
@@ -80,7 +84,9 @@ for(i in 1:ncol(Data)){
 # plot of age (count)
 age_count <- ggplot(Data, aes(x = Data[, 4])) +
   geom_bar(width=0.5, position = position_dodge()) + 
-  theme_minimal()
+  theme_minimal() + 
+  labs(title = "Distribution of Age") + 
+  xlab("Ages (years)")
 age_count
 
 # plot of age GROUPS (count)(by satisfaction)
@@ -114,32 +120,47 @@ ageplotdata[, 4] <- as.factor(ageplotdata[, 4])
 # plot of age groups (count)(by satisfaction)
 agegroup_count <- ggplot(ageplotdata, aes(x = ageplotdata[, 4], fill = ageplotdata[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution of age groups, by satisfaction") + 
+  xlab("Age groups (years)") + 
+  theme(legend.title=element_blank())
 agegroup_count
 
 # PLOTS OF CATEGORICAL/BINARY FACTOR VARIABLES
 # plot of gender (count)(by satisfaction)
 gender_count <- ggplot(Data, aes(x = Data[, 2], fill = Data[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution of gender, by satisfaction") + 
+  xlab("Genders") + 
+  theme(legend.title=element_blank())
 gender_count
 
 # plot of customer loyalty (count)(by satisfaction)
 loyalty_count <- ggplot(Data, aes(x = Data[, 3], fill = Data[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution of loyalty status, by satisfaction") + 
+  xlab("Loyalty status") + 
+  theme(legend.title=element_blank())
 loyalty_count
 
 # plot of customer travel type(count)(by satisfaction)
 type_count <- ggplot(Data, aes(x = Data[, 5], fill = Data[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution of travel intent, by satisfaction") + 
+  xlab("Travel intent") + 
+  theme(legend.title=element_blank())
 type_count
 
 # plot of customer seat class (count)(by satisfaction)
 class_count <- ggplot(Data, aes(x = Data[, 6], fill = Data[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution of seat class, by satisfaction") + 
+  xlab("Seat classes") + 
+  theme(legend.title=element_blank())
 class_count
 
 # separate satisfaction, 
@@ -201,7 +222,7 @@ for(i in 2:ncol(dissat_Data)){
   }
 }
 
-# initialize dataset with ALL factor variables (for k mode clusters)
+# initialize dataset with ALL factor variables (for more graphs)
 factorData <- ageplotdata[1:21]
 
 # convert flight distance to factor
@@ -238,13 +259,142 @@ for(i in 1:ncol(factorData)){
 # plot of flight distance (count)(by satisfaction)
 flightdist_count <- ggplot(factorData, aes(x = factorData[, 7], fill = factorData[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(title = "Distribution of flight distance, by satisfaction") + 
+  xlab("Flight distance ranges (kms)") + 
+  theme(legend.title=element_blank())
 flightdist_count
+
+# plot of seat comfort (count)(by satisfaction)
+seatcomfort_count <- ggplot(factorData, aes(x = factorData[, 8], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of seat comfort, by satisfaction") + 
+  xlab("Seat comfort score") + 
+  theme(legend.title=element_blank())
+seatcomfort_count
+
+# plot of dep and arr time convenience (count)(by satisfaction)
+deparrtimeconv_count <- ggplot(factorData, aes(x = factorData[, 9], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of time convenience, by satisfaction") + 
+  xlab("Time convenience score") + 
+  theme(legend.title=element_blank())
+deparrtimeconv_count
+
+# plot of food and drink (count)(by satisfaction)
+foodanddrink_count <- ggplot(factorData, aes(x = factorData[, 10], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of food and drink, by satisfaction") + 
+  xlab("Food and drink score") + 
+  theme(legend.title=element_blank())
+foodanddrink_count
+
+# plot of gate location (count)(by satisfaction)
+gatelocation_count <- ggplot(factorData, aes(x = factorData[, 11], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of gate location, by satisfaction") + 
+  xlab("Gate location score") + 
+  theme(legend.title=element_blank())
+gatelocation_count
+
+# plot of inflight wifi (count)(by satisfaction)
+inflightwifi_count <- ggplot(factorData, aes(x = factorData[, 12], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of in-flight wi-fi, by satisfaction") + 
+  xlab("In-flight wi-fi score") + 
+  theme(legend.title=element_blank())
+inflightwifi_count
+
+# plot of inflight entertainment (count)(by satisfaction)
+inflightent_count <- ggplot(factorData, aes(x = factorData[, 13], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of in-flight entertainment, by satisfaction") + 
+  xlab("In-flight entertainment score") + 
+  theme(legend.title=element_blank())
+inflightent_count
+
+# plot of online support (count)(by satisfaction)
+onlinesup_count <- ggplot(factorData, aes(x = factorData[, 14], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of online support, by satisfaction") + 
+  xlab("Online support score") + 
+  theme(legend.title=element_blank())
+onlinesup_count
+
+# plot of ease of online booking (count)(by satisfaction)
+easeofbooking_count <- ggplot(factorData, aes(x = factorData[, 15], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of ease of online booking, by satisfaction") + 
+  xlab("Ease of online booking score") + 
+  theme(legend.title=element_blank())
+easeofbooking_count
+
+# plot of on-board service (count)(by satisfaction)
+onboardserv_count <- ggplot(factorData, aes(x = factorData[, 16], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of on-board service, by satisfaction") + 
+  xlab("On-board service score") + 
+  theme(legend.title=element_blank())
+onboardserv_count
+
+# plot of leg room (count)(by satisfaction)
+legroom_count <- ggplot(factorData, aes(x = factorData[, 17], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of leg room, by satisfaction") + 
+  xlab("Leg room score") + 
+  theme(legend.title=element_blank())
+legroom_count
+
+# plot of baggage handling (count)(by satisfaction)
+baghandle_count <- ggplot(factorData, aes(x = factorData[, 18], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of baggage handling, by satisfaction") + 
+  xlab("Baggage handling score") + 
+  theme(legend.title=element_blank())
+baghandle_count
+
+# plot of check-in service (count)(by satisfaction)
+checkin_count <- ggplot(factorData, aes(x = factorData[, 19], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of check-in service, by satisfaction") + 
+  xlab("Check-in service score") + 
+  theme(legend.title=element_blank())
+checkin_count
+
+# plot of cleanliness (count)(by satisfaction)
+cleanliness_count <- ggplot(factorData, aes(x = factorData[, 20], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of cleanliness, by satisfaction") + 
+  xlab("Cleanliness score") + 
+  theme(legend.title=element_blank())
+cleanliness_count
+
+# plot of online boarding (count)(by satisfaction)
+onlineboard_count <- ggplot(factorData, aes(x = factorData[, 21], fill = factorData[, 1])) +
+  geom_bar(width=0.5, position = position_dodge()) + 
+  theme_minimal() +
+  labs(title = "Distribution of online boarding, by satisfaction") + 
+  xlab("Online boarding score") + 
+  theme(legend.title=element_blank())
+onlineboard_count
 
 # print correlation matrix
 model.matrix(~0+., Data) %>%
   cor() %>%
-  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=3)
 
 ################################################################################
 # 
@@ -269,7 +419,7 @@ model.matrix(~0+., Data) %>%
 
 # redefine data_att (must be as such, can only be used on cont variables)
 clustData <- Data[, 2:23]
-clustData_OH <- model.matrix(~0+., data=clustData)[,2:24]
+clustData_OH <- model.matrix(~0+., data=clustData)[,2:21]
 clustData_OH_scaled <- as.data.frame(scale(clustData_OH, center=TRUE, scale=TRUE))
 scaled_data <- clustData_OH_scaled
 
@@ -331,9 +481,9 @@ print(rpartImp)
 
 # partition percentage for loop
 training_data_percentages <- seq(from = 0.1, to = 0.9, length.out = 9)
-
 # decision tree classification (looping through 9 possible splits)
 cat("Decision Tree implementation")
+dtResults <- data.frame(matrix(ncol = 5, nrow = 0, dimnames = list(NULL, c("Split Ratio", "Accuracy", "Sensitivity", "Specificity", "F1-Score"))))
 for(t in training_data_percentages){
   print("================================================================================================================")
   cat(sprintf("Current train-test split: %s-%1.0f\n", t*100, (1-t)*100))
@@ -343,23 +493,33 @@ for(t in training_data_percentages){
   training_data = Data[indx_partition,]
   testing_data = Data[-indx_partition,]
   
-  # set seed for reproducability, train and receive predictions
+  # Set seed for reproducability of results.
   set.seed(42)
+  # Train classifier using library, make predictions using trained model.
   TrainedClassifier = C5.0(x = training_data[, 2:ncol(testing_data)], y = training_data[, 1])
   Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)], type = "prob")[, 2]
   
-  # calculate AUC from decision confidence, draw ROC curve
+  # Calculate AUC from decision confidence, draw ROC curve.
   roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
   plot(roc_score, main = paste("ROC Curve for Decision Tree, Split Ratio", t*100, "-", (1-t)*100))
   
-  # convert decision confidence to factor, produce confusion matrix
+  # Convert decision confidence to factor, produce confusion matrix.
   Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
   cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
   print(cm)
+  
+  # Add results to table.
+  dtResults[t*10, 1] <- t
+  dtResults[t*10, 2] <- cm$overall[1]
+  dtResults[t*10, 3] <- cm$byClass[1]
+  dtResults[t*10, 4] <- cm$byClass[2]
+  dtResults[t*10, 5] <- cm$byClass[7]
 }
 
 # nb classification
 cat("Naive Bayes implementation")
+# Initialise results table.
+nbResults <- data.frame(matrix(ncol = 5, nrow = 0, dimnames = list(NULL, c("Split Ratio", "Accuracy", "Sensitivity", "Specificity", "F1-Score"))))
 for(t in training_data_percentages){
   print("================================================================================================================")
   cat(sprintf("Current train-test split: %s-%1.0f\n", t*100, (1-t)*100))
@@ -379,10 +539,17 @@ for(t in training_data_percentages){
 
   cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
   print(cm)
+  
+  nbResults[t*10, 1] <- t
+  nbResults[t*10, 2] <- cm$overall[1]
+  nbResults[t*10, 3] <- cm$byClass[1]
+  nbResults[t*10, 4] <- cm$byClass[2]
+  nbResults[t*10, 5] <- cm$byClass[7]
 }
 
 # Logistic regression algorithm
 cat("Logistic regression implementation")
+lrResults <- data.frame(matrix(ncol = 5, nrow = 0, dimnames = list(NULL, c("Split Ratio", "Accuracy", "Sensitivity", "Specificity", "F1-Score"))))
 for(t in training_data_percentages){
   print("================================================================================================================")
   cat(sprintf("Current training partition: %s\n", t))
@@ -398,14 +565,62 @@ for(t in training_data_percentages){
   roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
   plot(roc_score, main = paste("ROC Curve for Logistic Regression, Split Ratio", t*100, "-", (1-t)*100))
   
-  # Set decision threshold
   Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
   
   cm <- confusionMatrix(testing_data[, 1], Predicted_outcomes)
   print(cm)
+  
+  lrResults[t*10, 1] <- t
+  lrResults[t*10, 2] <- cm$overall[1]
+  lrResults[t*10, 3] <- cm$byClass[1]
+  lrResults[t*10, 4] <- cm$byClass[2]
+  lrResults[t*10, 5] <- cm$byClass[7]
 }
 
+# combining all results in one dataframe (allResults)
+allResults <- rbind(dtResults, nbResults)
+allResults <- rbind(allResults, lrResults)
+allResults[1:9, 6] <- "C5.0"
+allResults[10:18, 6] <- "NB"
+allResults[19: 27, 6] <- "LR"
+allResults[, 6] <- as.factor(allResults[, 6])
+colnames(allResults)[6] <- "Algorithm"
+
+# Plot comparing accuracy
+ggplot(data=allResults, aes(x=Split.Ratio, y=Accuracy, group=Algorithm)) +
+  geom_line(aes(color = Algorithm))+
+  geom_point(aes(color = Algorithm)) +
+  labs(title = "Classification accuracy for all splits and algorithms") +
+  xlab("Split ratio") +
+  theme_minimal()
+
+# Plot comparing sensitivity
+ggplot(data=allResults, aes(x=Split.Ratio, y=Sensitivity, group=Algorithm)) +
+  geom_line(aes(color = Algorithm))+
+  geom_point(aes(color = Algorithm)) +
+  labs(title = "Classification sensitivity for all splits and algorithms") +
+  xlab("Split ratio") + 
+  theme_minimal()
+
+# Plot comparing specificity
+ggplot(data=allResults, aes(x=Split.Ratio, y=Specificity, group=Algorithm)) +
+  geom_line(aes(color = Algorithm))+
+  geom_point(aes(color = Algorithm)) +
+  labs(title = "Classification specificity for all splits and algorithms") +
+  xlab("Split ratio") + 
+  theme_minimal()
+
+# Plot comparing F1-score
+ggplot(data=allResults, aes(x=Split.Ratio, y=F1.Score, group=Algorithm)) +
+  geom_line(aes(color = Algorithm))+
+  geom_point(aes(color = Algorithm)) +
+  labs(title = "Classification F1-Score for all splits and algorithms") +
+  xlab("Split ratio") + 
+  ylab("F1-Score") +
+  theme_minimal()
+
 ##############################################################################
+
 points <- data.frame(points)
 
 for(i in 1:nrow(Data)){
