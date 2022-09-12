@@ -27,7 +27,7 @@ dim(Data)
 # missing values per column check (~300 rows are missing value in arrivalDelay)
 cbind(
   lapply(
-    lapply(Data, is.na)
+    lapply(check, is.na)
     , sum)
 )
 
@@ -68,17 +68,30 @@ for(i in 1:ncol(Data)){
       geom_histogram(bins = 5) + 
       labs(title = var) + 
       coord_flip() + 
+      ylab(var) + 
       theme_minimal()
     print(plot_list[[i]])
   }
   else if(is.factor(Data[, i]) == TRUE){
-    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_bar() + labs(title = var) + coord_flip() + theme_minimal()
+    plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + 
+      geom_bar() + 
+      labs(title = var) + 
+      coord_flip() + 
+      ylab(var) +
+      theme_minimal()
     print(plot_list[[i]])
   }
   else{
     cat(sprintf("feature %s is not graphable\n", i))
   }
 }
+
+# separate satisfaction and dissatisfaction
+sat_Data <- Data %>% filter(satisfaction == 'satisfied')
+summary(sat_Data)
+
+dissat_Data <- Data %>% filter(satisfaction == 'dissatisfied')
+summary(dissat_Data)
 
 # count plots by satisfaction
 # plot of age (count)
@@ -136,6 +149,14 @@ gender_count <- ggplot(Data, aes(x = Data[, 2], fill = Data[, 1])) +
   theme(legend.title=element_blank())
 gender_count
 
+Data %>%
+  group_by(Gender) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Gender) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # plot of customer loyalty (count)(by satisfaction)
 loyalty_count <- ggplot(Data, aes(x = Data[, 3], fill = Data[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -144,6 +165,14 @@ loyalty_count <- ggplot(Data, aes(x = Data[, 3], fill = Data[, 1])) +
   xlab("Loyalty status") + 
   theme(legend.title=element_blank())
 loyalty_count
+
+Data %>%
+  group_by(Customer.Type) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Customer.Type) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
 
 # plot of customer travel type(count)(by satisfaction)
 type_count <- ggplot(Data, aes(x = Data[, 5], fill = Data[, 1])) +
@@ -154,6 +183,14 @@ type_count <- ggplot(Data, aes(x = Data[, 5], fill = Data[, 1])) +
   theme(legend.title=element_blank())
 type_count
 
+Data %>%
+  group_by(Type.of.Travel) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Type.of.Travel) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # plot of customer seat class (count)(by satisfaction)
 class_count <- ggplot(Data, aes(x = Data[, 6], fill = Data[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -163,64 +200,13 @@ class_count <- ggplot(Data, aes(x = Data[, 6], fill = Data[, 1])) +
   theme(legend.title=element_blank())
 class_count
 
-# separate satisfaction, 
-sat_Data <- Data %>% filter(satisfaction == 'satisfied')
-summary(sat_Data)
+Data %>%
+  group_by(Class) %>%
+  summarise(percent = 100 * n() / nrow(Data))
 
-# SATISFIED plots
-plot_list = list()
-for(i in 2:ncol(sat_Data)){
-  var = names(sat_Data)[i]
-  if(is.numeric(sat_Data[, i]) == TRUE){
-    # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
-    plot_list[[i]] = ggplot(sat_Data, aes(, sat_Data[, i])) + 
-      geom_histogram(bins = 5) + 
-      labs(title = var) + 
-      coord_flip() + 
-      theme_minimal()
-    print(plot_list[[i]])
-  }
-  else if(is.factor(sat_Data[, i]) == TRUE){
-    plot_list[[i]] = ggplot(sat_Data, aes(, sat_Data[, i])) + 
-      geom_bar(width = 0.5) + 
-      labs(title = var) + 
-      coord_flip() + 
-      theme_minimal()
-    print(plot_list[[i]])
-  }
-  else{
-    cat(sprintf("feature %s is not graphable\n", i))
-  }
-}
-
-dissat_Data <- Data %>% filter(satisfaction == 'dissatisfied')
-summary(dissat_Data)
-
-# DISSATISFIED plots
-plot_list = list()
-for(i in 2:ncol(dissat_Data)){
-  var = names(dissat_Data)[i]
-  if(is.numeric(dissat_Data[, i]) == TRUE){
-    # plot_list[[i]] = ggplot(Data, aes(, Data[, i])) + geom_boxplot() + labs(title = var)
-    plot_list[[i]] = ggplot(dissat_Data, aes(, dissat_Data[, i])) + 
-      geom_histogram(bins = 5) + 
-      labs(title = var) + 
-      coord_flip() + 
-      theme_minimal()
-    print(plot_list[[i]])
-  }
-  else if(is.factor(dissat_Data[, i]) == TRUE){
-    plot_list[[i]] = ggplot(dissat_Data, aes(, dissat_Data[, i])) + 
-      geom_bar(width = 0.5) + 
-      labs(title = var) + 
-      coord_flip() + 
-      theme_minimal()
-    print(plot_list[[i]])
-  }
-  else{
-    cat(sprintf("feature %s is not graphable\n", i))
-  }
-}
+sat_Data %>%
+  group_by(Class) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
 
 # initialize dataset with ALL factor variables (for more graphs)
 factorData <- ageplotdata[1:21]
@@ -274,6 +260,14 @@ seatcomfort_count <- ggplot(factorData, aes(x = factorData[, 8], fill = factorDa
   theme(legend.title=element_blank())
 seatcomfort_count
 
+Data %>%
+  group_by(Seat.comfort) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Class) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # plot of dep and arr time convenience (count)(by satisfaction)
 deparrtimeconv_count <- ggplot(factorData, aes(x = factorData[, 9], fill = factorData[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -282,6 +276,14 @@ deparrtimeconv_count <- ggplot(factorData, aes(x = factorData[, 9], fill = facto
   xlab("Time convenience score") + 
   theme(legend.title=element_blank())
 deparrtimeconv_count
+
+Data %>%
+  group_by(Departure.Arrival.time.convenient) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Departure.Arrival.time.convenient) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
 
 # plot of food and drink (count)(by satisfaction)
 foodanddrink_count <- ggplot(factorData, aes(x = factorData[, 10], fill = factorData[, 1])) +
@@ -292,6 +294,14 @@ foodanddrink_count <- ggplot(factorData, aes(x = factorData[, 10], fill = factor
   theme(legend.title=element_blank())
 foodanddrink_count
 
+Data %>%
+  group_by(Food.and.drink) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Food.and.drink) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # plot of gate location (count)(by satisfaction)
 gatelocation_count <- ggplot(factorData, aes(x = factorData[, 11], fill = factorData[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -300,6 +310,14 @@ gatelocation_count <- ggplot(factorData, aes(x = factorData[, 11], fill = factor
   xlab("Gate location score") + 
   theme(legend.title=element_blank())
 gatelocation_count
+
+Data %>%
+  group_by(Gate.location) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Gate.location) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
 
 # plot of inflight wifi (count)(by satisfaction)
 inflightwifi_count <- ggplot(factorData, aes(x = factorData[, 12], fill = factorData[, 1])) +
@@ -310,6 +328,14 @@ inflightwifi_count <- ggplot(factorData, aes(x = factorData[, 12], fill = factor
   theme(legend.title=element_blank())
 inflightwifi_count
 
+Data %>%
+  group_by(Inflight.wifi.service) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Inflight.wifi.service) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # plot of inflight entertainment (count)(by satisfaction)
 inflightent_count <- ggplot(factorData, aes(x = factorData[, 13], fill = factorData[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -318,6 +344,14 @@ inflightent_count <- ggplot(factorData, aes(x = factorData[, 13], fill = factorD
   xlab("In-flight entertainment score") + 
   theme(legend.title=element_blank())
 inflightent_count
+
+Data %>%
+  group_by(Inflight.entertainment) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Inflight.entertainment) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
 
 # plot of online support (count)(by satisfaction)
 onlinesup_count <- ggplot(factorData, aes(x = factorData[, 14], fill = factorData[, 1])) +
@@ -328,6 +362,14 @@ onlinesup_count <- ggplot(factorData, aes(x = factorData[, 14], fill = factorDat
   theme(legend.title=element_blank())
 onlinesup_count
 
+Data %>%
+  group_by(Online.support) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Online.support) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # plot of ease of online booking (count)(by satisfaction)
 easeofbooking_count <- ggplot(factorData, aes(x = factorData[, 15], fill = factorData[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -336,6 +378,14 @@ easeofbooking_count <- ggplot(factorData, aes(x = factorData[, 15], fill = facto
   xlab("Ease of online booking score") + 
   theme(legend.title=element_blank())
 easeofbooking_count
+
+Data %>%
+  group_by(Ease.of.Online.booking) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Ease.of.Online.booking) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
 
 # plot of on-board service (count)(by satisfaction)
 onboardserv_count <- ggplot(factorData, aes(x = factorData[, 16], fill = factorData[, 1])) +
@@ -346,6 +396,14 @@ onboardserv_count <- ggplot(factorData, aes(x = factorData[, 16], fill = factorD
   theme(legend.title=element_blank())
 onboardserv_count
 
+Data %>%
+  group_by(Ease.of.Online.booking) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Ease.of.Online.booking) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # plot of leg room (count)(by satisfaction)
 legroom_count <- ggplot(factorData, aes(x = factorData[, 17], fill = factorData[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -354,6 +412,14 @@ legroom_count <- ggplot(factorData, aes(x = factorData[, 17], fill = factorData[
   xlab("Leg room score") + 
   theme(legend.title=element_blank())
 legroom_count
+
+Data %>%
+  group_by(Leg.room.service) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Leg.room.service) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
 
 # plot of baggage handling (count)(by satisfaction)
 baghandle_count <- ggplot(factorData, aes(x = factorData[, 18], fill = factorData[, 1])) +
@@ -364,6 +430,15 @@ baghandle_count <- ggplot(factorData, aes(x = factorData[, 18], fill = factorDat
   theme(legend.title=element_blank())
 baghandle_count
 
+Data %>%
+  group_by(Baggage.handling) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Baggage.handling) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
+
 # plot of check-in service (count)(by satisfaction)
 checkin_count <- ggplot(factorData, aes(x = factorData[, 19], fill = factorData[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -372,6 +447,14 @@ checkin_count <- ggplot(factorData, aes(x = factorData[, 19], fill = factorData[
   xlab("Check-in service score") + 
   theme(legend.title=element_blank())
 checkin_count
+
+Data %>%
+  group_by(Checkin.service) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Checkin.service) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
 
 # plot of cleanliness (count)(by satisfaction)
 cleanliness_count <- ggplot(factorData, aes(x = factorData[, 20], fill = factorData[, 1])) +
@@ -382,6 +465,14 @@ cleanliness_count <- ggplot(factorData, aes(x = factorData[, 20], fill = factorD
   theme(legend.title=element_blank())
 cleanliness_count
 
+Data %>%
+  group_by(Cleanliness) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Cleanliness) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # plot of online boarding (count)(by satisfaction)
 onlineboard_count <- ggplot(factorData, aes(x = factorData[, 21], fill = factorData[, 1])) +
   geom_bar(width=0.5, position = position_dodge()) + 
@@ -391,12 +482,20 @@ onlineboard_count <- ggplot(factorData, aes(x = factorData[, 21], fill = factorD
   theme(legend.title=element_blank())
 onlineboard_count
 
+Data %>%
+  group_by(Online.boarding) %>%
+  summarise(percent = 100 * n() / nrow(Data))
+
+sat_Data %>%
+  group_by(Online.boarding) %>%
+  summarise(percent = 100 * n() / nrow(sat_Data))
+
 # print correlation matrix
 model.matrix(~0+., Data) %>%
   cor() %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=3)
 
-################################################################################
+################################## CLUSTERING ##############################
 # 
 # kmodeclust <- kmodes(factorData[2:ncol(factorData)], 5, iter.max = 10, weighted = FALSE)
 # kmodeclust
@@ -426,10 +525,6 @@ scaled_data <- clustData_OH_scaled
 # # scale and center data
 # scaled_data = as.matrix(scale(data_att))
 
-# initial clustering
-kmm = kmeans(scaled_data, 3, nstart = 50, iter.max = 50)
-kmm
-
 # set seed
 set.seed(123)
 
@@ -441,8 +536,8 @@ wss
 
 plot(1:k.max, wss,
      type="b", pch = 19, frame = FALSE, 
-     xlab="Number of clusters K",
-     ylab="Total within-clusters sum of squares")
+     xlab="Number of clusters",
+     ylab="Sum of squares")
 
 # bayesian inference criterion
 d_clust <- Mclust(as.matrix(scaled_data), G=1:15, 
@@ -451,16 +546,18 @@ d_clust$BIC
 plot(d_clust)
 
 # clustering
-kmm = kmeans(scaled_data, 5, nstart = 50, iter.max = 50)
+kmm = kmeans(scaled_data, 4, nstart = 50, iter.max = 50)
 kmm
 
 # means per cluster
 aggregate(clustData_OH, by=list(cluster=kmm$cluster), mean)
 
+# add cluster results here!!!
+
 # adding cluster assignments to dataset
 Data_clustered <- cbind(Data, cluster = kmm$cluster)
 
-################################################################################
+################################## CLASSIFICATION ##############################
 
 # boruta working
 boruta_output <- Boruta(Data$satisfaction ~ ., data=Data[, 2:ncol(Data)], doTrace=0)
