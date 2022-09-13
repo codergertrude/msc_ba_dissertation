@@ -15,6 +15,8 @@ library(corrplot)
 library(ggcorrplot)
 library(ROCR)
 library(pROC)
+library(ggpubr)
+library(ztable)
 
 # load dataset as 'Data'
 Data = read.csv("Invistico_Airline.csv", stringsAsFactors = FALSE)
@@ -496,29 +498,10 @@ model.matrix(~0+., Data) %>%
   ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=3)
 
 ################################## CLUSTERING ##############################
-# 
-# kmodeclust <- kmodes(factorData[2:ncol(factorData)], 5, iter.max = 10, weighted = FALSE)
-# kmodeclust
-# 
-# # set seed
-# set.seed(123)
-# 
-# # elbow method
-# k.max <- 15
-# wss <- sapply(1:k.max, 
-#               function(k){kmodes(factorData, k, iter.max = 15)$withindiff})
-# wss
-# 
-# plot(1:k.max, wss,
-#      type="b", pch = 19, frame = FALSE, 
-#      xlab="Number of clusters K",
-#      ylab="Total within-clusters sum of squares")
-
-#####
 
 # redefine data_att (must be as such, can only be used on cont variables)
 clustData <- Data[, 2:23]
-clustData_OH <- model.matrix(~0+., data=clustData)[,2:21]
+clustData_OH <- model.matrix(~0+., data=clustData)[,2:23]
 clustData_OH_scaled <- as.data.frame(scale(clustData_OH, center=TRUE, scale=TRUE))
 scaled_data <- clustData_OH_scaled
 
@@ -529,7 +512,7 @@ scaled_data <- clustData_OH_scaled
 set.seed(123)
 
 # elbow method
-k.max <- 15
+k.max <- 8
 wss <- sapply(1:k.max, 
               function(k){kmeans(scaled_data, k, nstart=50,iter.max = 50)$tot.withinss})
 wss
@@ -538,24 +521,223 @@ plot(1:k.max, wss,
      type="b", pch = 19, frame = FALSE, 
      xlab="Number of clusters",
      ylab="Sum of squares")
+abline(v = 2, col="black", lwd=3, lty=2)
 
 # bayesian inference criterion
-d_clust <- Mclust(as.matrix(scaled_data), G=1:15, 
+d_clust <- Mclust(as.matrix(scaled_data), G=1:8, 
                   modelNames = mclust.options("emModelNames"))
 d_clust$BIC
 plot(d_clust)
 
 # clustering
-kmm = kmeans(scaled_data, 4, nstart = 50, iter.max = 50)
+kmm = kmeans(scaled_data, 4, nstart = 30, iter.max = 55)
 kmm
 
 # means per cluster
 aggregate(clustData_OH, by=list(cluster=kmm$cluster), mean)
 
 # add cluster results here!!!
+clustRes <- Data[, 1:23]
+clustRes_OH <- model.matrix(~0+., data=clustRes)[,2:24]
 
-# adding cluster assignments to dataset
-Data_clustered <- cbind(Data, cluster = kmm$cluster)
+# means per cluster
+clustMeansDF <- aggregate(clustRes_OH, by=list(cluster=kmm$cluster), mean)
+
+# plot of cluster satisfaction
+clust1 <- ggplot(clustMeansDF, aes(x = cluster, y = satisfactionsatisfied, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Cluster means for satisfaction") + 
+  xlab("Clusters") +
+  ylab("Satisfaction %") + 
+  theme(legend.title=element_blank())
+
+clust2 <- ggplot(clustMeansDF, aes(x = cluster, y = GenderMale, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) +  theme_minimal() +
+  labs(title = "Male customers") + 
+  xlab("Clusters") + 
+  ylab("Male %") + 
+  theme(legend.title=element_blank())
+
+clust3 <- ggplot(clustMeansDF, aes(x = cluster, y = clustMeansDF[, 4], fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Loyal customers") + 
+  xlab("Clusters") +
+  ylab("Loyal %") +
+  theme(legend.title=element_blank())
+
+clust4 <- ggplot(clustMeansDF, aes(x = cluster, y = Age, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Customer age") + 
+  xlab("Clusters") +
+  ylab("Age") +
+  theme(legend.title=element_blank())
+
+clust5 <- ggplot(clustMeansDF, aes(x = cluster, y = clustMeansDF[, 6], fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Personal travel customers") + 
+  xlab("Clusters") + 
+  ylab("Personal travel %") +
+  theme(legend.title=element_blank())
+
+clust6 <- ggplot(clustMeansDF, aes(x = cluster, y = ClassEco, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Economy class customers") + 
+  xlab("Clusters") +
+  ylab("Economy class %") +
+  theme(legend.title=element_blank())
+
+clust7 <- ggplot(clustMeansDF, aes(x = cluster, y = clustMeansDF[, 8], fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Economy plus class customers") + 
+  xlab("Clusters") + 
+  ylab("Economy plus class %") +
+  theme(legend.title=element_blank())
+
+clust8 <- ggplot(clustMeansDF, aes(x = cluster, y = Flight.Distance, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Flight distance") + 
+  xlab("Clusters") + 
+  ylab("Flight distance (kms)") +
+  theme(legend.title=element_blank())
+
+clust9 <- ggplot(clustMeansDF, aes(x = cluster, y = Seat.comfort, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Seat comfort") + 
+  xlab("Clusters") +
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust10 <- ggplot(clustMeansDF, aes(x = cluster, y = Departure.Arrival.time.convenient, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Flight time convenience") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +  
+  theme(legend.title=element_blank())
+
+clust11 <- ggplot(clustMeansDF, aes(x = cluster, y = Food.and.drink, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Food and drink") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust12 <- ggplot(clustMeansDF, aes(x = cluster, y = Gate.location, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Gate location") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust13 <- ggplot(clustMeansDF, aes(x = cluster, y = Inflight.wifi.service, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "In-flight wifi") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust14 <- ggplot(clustMeansDF, aes(x = cluster, y = Inflight.entertainment, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "In-flight entertainment") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust15 <- ggplot(clustMeansDF, aes(x = cluster, y = Online.support, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Online support") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust16 <- ggplot(clustMeansDF, aes(x = cluster, y = Ease.of.Online.booking, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Online booking") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust17 <- ggplot(clustMeansDF, aes(x = cluster, y = On.board.service, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Onboard service") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust18 <- ggplot(clustMeansDF, aes(x = cluster, y = Leg.room.service, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Seat leg room") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust19 <- ggplot(clustMeansDF, aes(x = cluster, y = Baggage.handling, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Baggage handling") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust20 <- ggplot(clustMeansDF, aes(x = cluster, y = Checkin.service, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Check-in service") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust21 <- ggplot(clustMeansDF, aes(x = cluster, y = Cleanliness, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Cleanliness") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust22 <- ggplot(clustMeansDF, aes(x = cluster, y = Online.boarding, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Online boarding") + 
+  xlab("Clusters") + 
+  ylab("Score out of five") +
+  theme(legend.title=element_blank())
+
+clust23 <- ggplot(clustMeansDF, aes(x = cluster, y = Departure.Delay.in.Minutes, fill = cluster)) +
+  geom_bar(stat = 'identity', width=0.5, position = position_dodge(), show.legend = FALSE) + 
+  theme_minimal() +
+  labs(title = "Departure Delay") + 
+  xlab("Clusters") + 
+  ylab("Minutes") +
+  theme(legend.title=element_blank())
+
+ggarrange(clust2, clust3, clust4, clust5,
+          clust6, clust7, clust8, clust9, 
+          clust10, clust11, clust12, clust13, 
+          clust14, clust15, clust16, clust17, 
+          clust18, clust19, clust20, clust21,
+          clust22, clust23,
+          ncol = 4, nrow = 6)
+
+print(clust1)
+# # adding cluster assignments to dataset
+# Data_clustered <- cbind(Data, cluster = kmm$cluster)
 
 ################################## CLASSIFICATION ##############################
 
@@ -565,6 +747,7 @@ names(boruta_output)
 boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
 print(boruta_signif)
 
+roughFixMod <- TentativeRoughFix(boruta_output)
 imps <- attStats(roughFixMod)
 imps2 = imps[imps$decision != 'Rejected', c('meanImp', 'decision')]
 head(imps2[order(-imps2$meanImp), ])  # descending sort
@@ -598,7 +781,8 @@ for(t in training_data_percentages){
   
   # Calculate AUC from decision confidence, draw ROC curve.
   roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
-  plot(roc_score, main = paste("ROC Curve for Decision Tree, Split Ratio", t*100, "-", (1-t)*100))
+  roc_score
+  plot(roc_score, main = paste("ROC Curve for DT, Split Ratio", t*100, "-", (1-t)*100))
   
   # Convert decision confidence to factor, produce confusion matrix.
   Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
@@ -630,7 +814,7 @@ for(t in training_data_percentages){
   Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)], type = "raw")[, 2]
   
   roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
-  plot(roc_score, main = paste("ROC Curve for Naive Bayes, Split Ratio", t*100, "-", (1-t)*100))
+  plot(roc_score, main = paste("ROC Curve for NB, Split Ratio", t*100, "-", (1-t)*100))
   
   Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
 
@@ -660,7 +844,7 @@ for(t in training_data_percentages){
   Predicted_outcomes = predict(TrainedClassifier, newdata = testing_data[, 2:ncol(testing_data)], type = "response")
 
   roc_score = roc(testing_data$satisfaction, Predicted_outcomes) #AUC score
-  plot(roc_score, main = paste("ROC Curve for Logistic Regression, Split Ratio", t*100, "-", (1-t)*100))
+  plot(roc_score, main = paste("ROC Curve for LR, Split Ratio", t*100, "-", (1-t)*100))
   
   Predicted_outcomes <- as.factor(ifelse(Predicted_outcomes > 0.5, "satisfied", "dissatisfied"))
   
@@ -684,72 +868,45 @@ allResults[, 6] <- as.factor(allResults[, 6])
 colnames(allResults)[6] <- "Algorithm"
 
 # Plot comparing accuracy
-ggplot(data=allResults, aes(x=Split.Ratio, y=Accuracy, group=Algorithm)) +
+accuplot <- ggplot(data=allResults, aes(x=Split.Ratio, y=Accuracy, group=Algorithm)) +
   geom_line(aes(color = Algorithm))+
   geom_point(aes(color = Algorithm)) +
-  labs(title = "Classification accuracy for all splits and algorithms") +
+  labs(title = "Accuracy") +
   xlab("Split ratio") +
-  theme_minimal()
+  theme_minimal() + 
+  theme(legend.position="none")
 
 # Plot comparing sensitivity
-ggplot(data=allResults, aes(x=Split.Ratio, y=Sensitivity, group=Algorithm)) +
+sensplot <- ggplot(data=allResults, aes(x=Split.Ratio, y=Sensitivity, group=Algorithm)) +
   geom_line(aes(color = Algorithm))+
   geom_point(aes(color = Algorithm)) +
-  labs(title = "Classification sensitivity for all splits and algorithms") +
+  labs(title = "Sensitivity") +
   xlab("Split ratio") + 
-  theme_minimal()
+  theme_minimal() + 
+  theme(legend.position="none")
 
 # Plot comparing specificity
-ggplot(data=allResults, aes(x=Split.Ratio, y=Specificity, group=Algorithm)) +
+specplot <- ggplot(data=allResults, aes(x=Split.Ratio, y=Specificity, group=Algorithm)) +
   geom_line(aes(color = Algorithm))+
   geom_point(aes(color = Algorithm)) +
-  labs(title = "Classification specificity for all splits and algorithms") +
+  labs(title = "Specificity") +
   xlab("Split ratio") + 
   theme_minimal()
 
 # Plot comparing F1-score
-ggplot(data=allResults, aes(x=Split.Ratio, y=F1.Score, group=Algorithm)) +
+f1plot <- ggplot(data=allResults, aes(x=Split.Ratio, y=F1.Score, group=Algorithm)) +
   geom_line(aes(color = Algorithm))+
   geom_point(aes(color = Algorithm)) +
-  labs(title = "Classification F1-Score for all splits and algorithms") +
+  labs(title = "F1-Score") +
   xlab("Split ratio") + 
   ylab("F1-Score") +
-  theme_minimal()
+  theme_minimal() + 
+  theme(legend.position = "none")
+
+ggarrange(accuplot, f1plot,
+          sensplot, specplot,
+          ncol = 2, nrow = 2)
 
 ##############################################################################
 
-points <- data.frame(points)
-
-for(i in 1:nrow(Data)){
-  if(Data[i, 1] == 'satisfied'){
-    for(j in 8:21){
-      if(Data[i, (j-7)] == 4){
-        points[i, (j-7)] = 1 + points[i, (j-7)]
-      }
-      if(Data[i, (j-7)] == 5){
-        points[i, (j-7)] = 2 + points[i, (j-7)]
-      }
-      if(Data[i, (j-7)] == 2){
-        points[i, (j-7)] = 0.5 + points[i, (j-7)]
-      }
-      if(Data[i, (j-7)] == 1){
-        points[i, (j-7)] = 1 + points[i, (j-7)]
-      }
-    }
-  } else {
-    for(j in 8:21){
-      if(Data[i, (j-7)] == 4){
-        points[i, (j-7)] = 0.5 + points[i, (j-7)]
-      }
-      if(Data[i, (j-7)] == 5){
-        points[i, (j-7)] = 1 + points[i, (j-7)]
-      }
-      if(Data[i, (j-7)] == 2){
-        points[i, (j-7)] = 1 + points[i, (j-7)]
-      }
-      if(Data[i, (j-7)] == 1){
-        points[i, (j-7)] = 2 + points[i, (j-7)]
-      }
-    }
-  }
-}
+citation("stats")
